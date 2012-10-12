@@ -923,12 +923,39 @@
     //       ...
     //     });
     //
+    // Pass in an array of callbacks for middleware
+    //
+    //     var fns = [
+    //       function(query, num, next) {
+    //         somethingAsync(function() {
+    //           next()
+    //         });
+    //       },
+    //       function(query, num) {
+    //         ...
+    //       }
+    //     ];
+    //     this.route('search/:query/p:num', 'search', fns);
+    //
     route: function(route, name, callback) {
+      Backbone.history || (Backbone.history = new History);
       if (!_.isRegExp(route)) route = this._routeToRegExp(route);
       if (!callback) callback = this[name];
       Backbone.history.route(route, _.bind(function(fragment) {
         var args = this._extractParameters(route, fragment);
-        callback && callback.apply(this, args);
+
+        // If an array was passed in, make a callback chain
+        if (_.isArray(callback)) {
+          var self = this, index = 0;
+          // Chain the next function in the array
+          var next = function() {
+            return callback[++index].apply(self, (index < callback.length - 1) ? nextArgs : args);
+          };
+          var nextArgs = args.concat(next);
+          // Start the middleware chain
+          callback[0].apply(this, callback.length > 1 ? nextArgs : null);
+        } else callback && callback.apply(this, args);
+
         this.trigger.apply(this, ['route:' + name].concat(args));
         Backbone.history.trigger('route', this, name, args);
       }, this));
