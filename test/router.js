@@ -73,6 +73,8 @@ $(document).ready(function() {
       "splat/*args/end":            "splat",
       "*first/complex-:part/*rest": "complex",
       ":entity?*args":              "query",
+      "multiCallback":              "multiCallback",
+      "multiCallbackStop":          "multiCallbackStop",
       "*anything":                  "anything"
     },
 
@@ -127,7 +129,34 @@ $(document).ready(function() {
 
     anything : function(whatever) {
       this.anything = whatever;
-    }
+    },
+
+    multiCallback: [
+      function(next) {
+        this.callbackA = true;
+        next();
+      },
+      function(next) {
+        this.callbackB = true;
+        next();
+      },
+      function(next) {
+        this.callbackC = true;
+      }
+    ],
+
+    multiCallbackStop: [
+      function(next) {
+        this.callbackA = true;
+      },
+      function(next) {
+        this.callbackB = true;
+        next();
+      },
+      function(next) {
+        this.callbackC = true;
+      }
+    ]
 
   });
 
@@ -479,6 +508,23 @@ $(document).ready(function() {
       root: 'root',
       pushState: true
     });
+  });
+
+  test("Call all callbacks in route.", 3, function() {
+    Backbone.history.navigate('multiCallback', { trigger: true });
+    strictEqual(router.callbackA, true);
+    strictEqual(router.callbackB, true);
+    strictEqual(router.callbackC, true);
+  });
+
+  test("One callback should be called", 3, function() {
+    router.callbackA = undefined;
+    router.callbackB = undefined;
+    router.callbackC = undefined;
+    Backbone.history.navigate('multiCallbackStop', { trigger: true });
+    strictEqual(router.callbackA, true);
+    strictEqual(router.callbackB, undefined);
+    strictEqual(router.callbackC, undefined);
   });
 
 });

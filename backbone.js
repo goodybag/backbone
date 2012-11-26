@@ -949,7 +949,9 @@
           var self = this, index = 0;
           // Chain the next function in the array
           var next = function() {
-            return callback[++index].apply(self, (index < callback.length - 1) ? nextArgs : args);
+            var cb = callback[++index];
+            if (typeof cb === "string") cb = self[cb];
+            return cb.apply(self, (index < callback.length - 1) ? nextArgs : args);
           };
           var nextArgs = args.concat(next);
           // Start the middleware chain
